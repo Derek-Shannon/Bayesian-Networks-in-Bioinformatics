@@ -41,30 +41,38 @@ print("=" * 60)
 print("\nSTEP 1: Loading and Exploring Bioinformatics Datasets")
 print("-" * 50)
 
-# TODO: Load the three datasets
-# HINT: Use pd.read_csv() to load the CSV files from the data/ folder
-gene_data = None  # TODO: Load gene_expression.csv
-disease_data = None  # TODO: Load disease_markers.csv (now contains real SNP names)
-protein_data = None  # TODO: Load protein_interactions.csv
+gene_data = pd.read_csv('data/gene_expression.csv')  #Load gene_expression.csv
+disease_data = pd.read_csv('data/disease_markers.csv')  #Load disease_markers.csv (now contains real SNP names)
+protein_data = pd.read_csv('data/protein_interactions.csv')  #Load protein_interactions.csv
 
 # TODO: Print basic information about each dataset
-# HINT: Use .shape, .columns, and .value_counts() to explore the data
 print(f"Gene Expression Dataset Shape: {gene_data.shape if gene_data is not None else 'Not loaded'}")
-# TODO: Add more exploration code here
+print(f"                      Columns: {gene_data.columns if gene_data is not None else 'Not loaded'}")
+print(f"                 Value Counts: {gene_data.value_counts() if gene_data is not None else 'Not loaded'}")
+print(f"Disease Markers Dataset Shape: {disease_data.shape if disease_data is not None else 'Not loaded'}")
+print(f"                      Columns: {disease_data.columns if disease_data is not None else 'Not loaded'}")
+print(f"                 Value Counts: {disease_data.value_counts() if disease_data is not None else 'Not loaded'}")
+print(f"Protein Dataset         Shape: {protein_data.shape if protein_data is not None else 'Not loaded'}")
+print(f"                      Columns: {protein_data.columns if protein_data is not None else 'Not loaded'}")
+print(f"                 Value Counts: {protein_data.value_counts() if protein_data is not None else 'Not loaded'}")
+print()
 
-# TODO: Calculate basic statistics for gene expression data
+# Calculate basic statistics for gene expression data
 # HINT: Use .describe() to get statistical summary
-gene_stats = None  # TODO: Calculate statistics
+gene_expression_cols = gene_data.columns.drop('disease_status')
+gene_stats = gene_data[gene_expression_cols].describe()
 print(f"\nGene Expression Statistics:")
-# TODO: Add statistics printing code
+print(gene_stats.head()) # Print the first few rows for conciseness
+# Add statistics printing code
 
-# TODO: Calculate correlation with disease status
+# Calculate correlation with disease status
 # HINT: Use .corrwith() to find correlations between genes and disease status
 # HINT: Use .abs().nlargest(5) to find top 5 correlated genes
-gene_correlations = None  # TODO: Calculate correlations
-top_correlated_genes = None  # TODO: Find top 5 correlated genes
+gene_expression_cols = gene_data.columns.drop(['sample_id', 'disease_status'])
+gene_correlations = gene_data[gene_expression_cols].corrwith(gene_data['disease_status']) # Calculate correlations
+top_correlated_genes = gene_correlations.abs().nlargest(5)  # Find top 5 correlated genes
 print(f"\nTop 5 genes correlated with disease status:")
-# TODO: Add correlation printing code
+print(top_correlated_genes)
 
 # ============================================================================
 # [15 pts] STEP 2: Data Preprocessing and Feature Engineering
@@ -73,46 +81,62 @@ print(f"\nTop 5 genes correlated with disease status:")
 print("\nSTEP 2: Data Preprocessing and Feature Engineering")
 print("-" * 50)
 
-# TODO: Prepare gene expression data for analysis
+# Prepare gene expression data for analysis
 # HINT: Separate features from target variable
-gene_features = None  # TODO: Extract features
-gene_target = None  # TODO: Extract target
+gene_features = gene_data[gene_expression_cols].copy()  # Extract features
+gene_target = gene_data['disease_status'].copy()  # Extract target
 
-# TODO: Normalize gene expression data
+# Normalize gene expression data
 # HINT: Use StandardScaler() to normalize the features
 # HINT: Use fit_transform() and create a DataFrame with original column names
-scaler = None  # TODO: Create scaler
-gene_features_scaled = None  # TODO: Scale features
+scaler = StandardScaler()  # Create scaler
+gene_features_scaled = scaler.fit_transform(gene_features)  # Scale features
 
-# TODO: Create binary features for high/low expression
+gene_features_scaled = pd.DataFrame(
+    gene_features_scaled,
+    columns=gene_features.columns
+)
+# Create binary features for high/low expression
 # HINT: Use (gene_features_scaled > 0).astype(int) to create binary features
 # HINT: Rename columns to add "_high" suffix
-gene_features_binary = None  # TODO: Create binary features
+gene_features_binary = (gene_features_scaled > 0).astype(int)  #Create binary features
+gene_features_binary = gene_features_binary.add_suffix('_high')
 
-# TODO: Combine original and binary features
+# Combine original and binary features
 # HINT: Use pd.concat() to combine scaled and binary features
-gene_features_combined = None  # TODO: Combine features
+gene_features_combined = pd.concat([gene_features_scaled, gene_features_binary], axis=1)  # Combine features
 print(f"Combined feature set shape: {gene_features_combined.shape if gene_features_combined is not None else 'Not implemented'}")
 
-# TODO: Prepare disease markers data
+# Prepare disease markers data
 # HINT: Separate features from target variable
-disease_features = None  # TODO: Extract disease features
-disease_target = None  # TODO: Extract disease target
+disease_features = disease_data.drop(['diabetes_status'], axis=1)  # Extract disease features
+disease_target = disease_data['diabetes_status'].copy()  # Extract disease target
 
-# TODO: Create interaction features for SNPs
+# Create interaction features for SNPs
 # HINT: Find SNP columns using list comprehension with .startswith('rs')
-# NOTE: The dataset now contains real SNP names like rs7903146, rs12255372, etc.
-snp_columns = None  # TODO: Find SNP columns
+# The dataset now contains real SNP names like rs7903146, rs12255372, etc.
+snp_columns = [col for col in disease_features.columns if col.startswith('rs')]  # Find SNP columns
 clinical_columns = ['age', 'bmi', 'glucose', 'insulin', 'hdl_cholesterol']
 
 # TODO: Create SNP interaction features
 # HINT: Use nested loops to create pairwise interactions
 # HINT: Multiply SNP values: disease_features[snp_columns[i]] * disease_features[snp_columns[j]]
-snp_interactions = None  # TODO: Create SNP interactions
+interaction_data = {}
+for i in range(len(snp_columns)):
+    for j in range(i + 1, len(snp_columns)):
+        col1 = snp_columns[i]
+        col2 = snp_columns[j]
+        # Interaction is the product of the two SNPs
+        interaction_name = f"{col1}_x_{col2}"
+        interaction_data[interaction_name] = disease_features[col1] * disease_features[col2]
 
-# TODO: Combine clinical and SNP features
+snp_interactions = pd.DataFrame(interaction_data)  # Create SNP interactions
+valid_clinical = [col for col in clinical_columns if col in disease_features.columns]
+clinical_data = disease_features[valid_clinical]
+
+# Combine clinical and SNP features
 # HINT: Use pd.concat() to combine original features with interaction features
-disease_features_combined = None  # TODO: Combine disease features
+disease_features_combined = pd.concat([clinical_data, disease_features[snp_columns], snp_interactions], axis=1)  # TODO: Combine disease features
 print(f"Disease features combined shape: {disease_features_combined.shape if disease_features_combined is not None else 'Not implemented'}")
 
 # ============================================================================
