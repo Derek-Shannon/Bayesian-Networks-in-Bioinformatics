@@ -1,0 +1,13 @@
+# Python Virtual Environment
+.venv/
+venv/
+myenv/
+*/.venv/
+*/venv/
+
+# Byte-code and temporary files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
