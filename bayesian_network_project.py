@@ -302,8 +302,8 @@ def naive_bayes_inference(features, conditional_probs, prior_probs):
             
             # TODO: Get conditional probabilities from dictionary
             # HINT: Use .get() method with default value 0.5
-            prob_0 = 0.5  # TODO: Get probability for class 0
-            prob_1 = 0.5  # TODO: Get probability for class 1
+            prob_0 = conditional_probs.get(f"P({features.columns.name}=0 | {feature}={feature_val})", .05)  # TODO: Get probability for class 0
+            prob_1 = conditional_probs.get(f"P({features.columns.name}=1 | {feature}={feature_val})", .05)  # TODO: Get probability for class 1
             
             # TODO: Multiply likelihoods
             likelihood_0 *= prob_0  # TODO: Update likelihood_0
@@ -311,39 +311,45 @@ def naive_bayes_inference(features, conditional_probs, prior_probs):
         
         # TODO: Apply prior probabilities
         # HINT: Multiply likelihood by prior: posterior = likelihood * prior
-        posterior_0 = 0.0  # TODO: Calculate posterior for class 0
-        posterior_1 = 0.0  # TODO: Calculate posterior for class 1
+        posterior_0 = likelihood_0 * prior_probs[0]  # TODO: Calculate posterior for class 0
+        posterior_1 = likelihood_0 * prior_probs[1]  # TODO: Calculate posterior for class 1
         
         # TODO: Normalize probabilities
         # HINT: Divide by sum of posteriors
-        total = 0.0  # TODO: Calculate total
+        total = posterior_0 + posterior_1  # TODO: Calculate total
         posterior_0 /= total  # TODO: Normalize
         posterior_1 /= total  # TODO: Normalize
         
         # TODO: Make prediction
         # HINT: Choose class with higher posterior probability
-        predictions.append(0)  # TODO: Make prediction
+        predictions.append(0 if posterior_0 >= posterior_1 else 1)  # TODO: Make prediction
     
     return predictions
 
 # TODO: Split data for inference
 # HINT: Use train_test_split() with test_size=0.3 and random_state=42
-X_train = None  # TODO: Split training features
-X_test = None  # TODO: Split test features
-y_train = None  # TODO: Split training targets
-y_test = None  # TODO: Split test targets
+X_train,X_test,y_train,y_test = train_test_split(gene_features_binary, gene_target, test_size=.3, random_state=42)   # TODO: Split training features
+# TODO: Split test features
+# TODO: Split training targets
+# TODO: Split test targets
 
 # TODO: Calculate prior probabilities
 # HINT: Count samples in each class and divide by total
-prior_probs = [0.0, 0.0]  # TODO: Calculate prior probabilities
+total_samples= len(y_train)
+prior_0= (y_train == 0).sum()/total_samples
+prior_1= (y_train == 1).sum()/total_samples
+prior_probs = [prior_0,prior_1]  # TODO: Calculate prior probabilities
 
 # TODO: Perform inference
 # HINT: Call naive_bayes_inference() with test features, conditional probabilities, and priors
-predictions = None  # TODO: Perform inference
+
+
+
+predictions = naive_bayes_inference(X_test.iloc[:, :5],gene_conditional_probs,prior_probs)  # TODO: Perform inference
 
 # TODO: Calculate accuracy
 # HINT: Use accuracy_score() from sklearn.metrics
-accuracy = 0.0  # TODO: Calculate accuracy
+accuracy = accuracy_score(y_test, predictions)  # TODO: Calculate accuracy
 print(f"Naive Bayes inference accuracy: {accuracy:.3f}")
 
 # ============================================================================
@@ -436,40 +442,49 @@ print("-" * 50)
 
 # TODO: Create protein interaction network
 # HINT: Use nx.Graph() to create a new graph
-protein_graph = None  # TODO: Create protein graph
+protein_graph = nx.Graph()  # TODO: Create protein graph
 
 # TODO: Add edges from protein interaction data
 # HINT: Loop through protein_data rows
 # HINT: Add edges with protein names and interaction scores as weights
 # TODO: Add your loop code here
+for index, row in protein_data.iterrows():
+    protein_graph.add_edge(row['protein1'],row['protein2'],weight = row['score'], interaction_type=row['interaction_type'])
+
 
 # TODO: Analyze protein network
 # HINT: Use the same analyze_network_properties() function
-protein_properties = None  # TODO: Analyze protein network
+protein_properties = analyze_network_properties(protein_graph)  # TODO: Analyze protein network
 print("Protein Interaction Network Properties:")
 # TODO: Add property printing code
+for key, value in protein_properties.items():
+    print(f"{key}: {value}", end=" ")
+
 
 # TODO: Find hub proteins (high degree nodes)
 # HINT: Use dict(protein_graph.degree()) to get degree dictionary
 # HINT: Sort by degree in descending order and take top 5
-protein_degrees = None  # TODO: Get protein degrees
-hub_proteins = None  # TODO: Find hub proteins
+protein_degrees = dict(protein_graph.degree())  # TODO: Get protein degrees
+hub_proteins = sorted(protein_degrees.items(), key=lambda x: x[1], reverse=True)[:5]  # TODO: Find hub proteins
 print(f"\nTop 5 hub proteins:")
 # TODO: Add hub protein printing code
-
+for protein, degree  in hub_proteins:
+    print(f"{protein}: {degree} ", end=" ")
 # TODO: Analyze interaction types
 # HINT: Use .value_counts() on interaction_type column
-interaction_types = None  # TODO: Analyze interaction types
+interaction_types = protein_data['interaction_type'].value_counts()  # TODO: Analyze interaction types
 print(f"\nInteraction type distribution:")
 # TODO: Add interaction type printing code
-
+for interaction, count in interaction_types.items():
+    print(f"{interaction}:{count}",end= " ")
 # TODO: Visualize protein network
 # HINT: Use visualize_network() and plot_network_metrics() functions
 # HINT: Call visualize_network(protein_graph, title="Protein Interaction Network")
 # HINT: Call plot_network_metrics(protein_graph, title="Protein Network Metrics")
 print("\nVisualizing protein interaction network...")
 # TODO: Add visualization code for protein network
-
+visualize_network(protein_graph, title="Protein Interaction Network")
+plot_network_metrics(protein_graph, title="Protein Network Metrics")
 # ============================================================================
 # [4 pts] STEP 8: Model Evaluation and Biological Interpretation
 # ============================================================================
@@ -479,19 +494,19 @@ print("-" * 50)
 
 # TODO: Evaluate gene expression model
 # HINT: Use confusion_matrix() and classification_report() from sklearn.metrics
-confusion_mat = None  # TODO: Calculate confusion matrix
-classification_rep = None  # TODO: Generate classification report
+confusion_mat = confusion_matrix(y_test, predictions) # TODO: Calculate confusion matrix
+classification_rep = classification_report(y_test, predictions)  # TODO: Generate classification report
 
 print("Gene Expression Model Evaluation:")
 # TODO: Add evaluation printing code
-
+print(f"Matrix: \n{confusion_mat} \n Classification Report \n{classification_report}")
 # TODO: Calculate additional biological metrics
 # HINT: Extract true negatives, false positives, false negatives, true positives from confusion matrix
 # HINT: Calculate sensitivity (TPR), specificity (TNR), and precision
-tn, fp, fn, tp = 0, 0, 0, 0  # TODO: Extract confusion matrix values
-sensitivity = 0.0  # TODO: Calculate sensitivity
-specificity = 0.0  # TODO: Calculate specificity
-precision = 0.0  # TODO: Calculate precision
+tn, fp, fn, tp = confusion_mat.ravel()  # TODO: Extract confusion matrix values
+sensitivity = tp/(tp+fn)  # TODO: Calculate sensitivity
+specificity = tn/(tn+fp)  # TODO: Calculate specificity
+precision = tp/(tp+fp)  # TODO: Calculate precision
 
 print(f"\nBiological Metrics:")
 print(f"  Sensitivity (True Positive Rate): {sensitivity:.3f}")
