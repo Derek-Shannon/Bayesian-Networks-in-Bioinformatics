@@ -369,43 +369,50 @@ def analyze_network_properties(graph):
     
     # TODO: Calculate basic properties
     # HINT: Use graph.number_of_nodes(), graph.number_of_edges(), nx.density()
-    properties['nodes'] = 0  # TODO: Count nodes
-    properties['edges'] = 0  # TODO: Count edges
-    properties['density'] = 0.0  # TODO: Calculate density
+    properties['nodes'] = graph.number_of_nodes()  # TODO: Count nodes
+    properties['edges'] = graph.number_of_edges()  # TODO: Count edges
+    properties['density'] = nx.density(graph)  # TODO: Calculate density
     
     # TODO: Calculate centrality measures
     # HINT: Use dict(graph.degree()) to get degree dictionary
     if graph.number_of_nodes() > 0:
         # TODO: Calculate average degree
         # HINT: Sum all degrees and divide by number of nodes
-        properties['avg_degree'] = 0.0  # TODO: Calculate average degree
+
+        dict_degree = dict(graph.degree())
+        degrees = list(dict_degree.values())
+
+
+        properties['avg_degree'] = sum(degrees)/ graph.number_of_nodes() # TODO: Calculate average degree
         
         # TODO: Calculate maximum degree
         # HINT: Use max() on degree values
-        properties['max_degree'] = 0  # TODO: Calculate max degree
+        properties['max_degree'] = max(degrees)  # TODO: Calculate max degree
         
         # TODO: Calculate clustering coefficient
         # HINT: Use nx.average_clustering(graph)
-        properties['avg_clustering'] = 0.0  # TODO: Calculate clustering
+        properties['avg_clustering'] = nx.average_clustering(graph)  # TODO: Calculate clustering
         
         # TODO: Calculate number of connected components
         # HINT: Use nx.number_connected_components(graph)
-        properties['connected_components'] = 0  # TODO: Count components
+        properties['connected_components'] = nx.number_attracting_components(graph)  # TODO: Count components
     
     return properties
 
 # TODO: Analyze gene network
 # HINT: Call analyze_network_properties() with gene_graph
-gene_properties = None  # TODO: Analyze gene network
+gene_properties = analyze_network_properties(gene_graph)  # TODO: Analyze gene network
 print("Gene Network Properties:")
 # TODO: Add property printing code
-
+for key,value in gene_properties.items():
+    print(f"{key}: {value}" , end = " ")
 # TODO: Analyze disease network
 # HINT: Call analyze_network_properties() with disease_graph
-disease_properties = None  # TODO: Analyze disease network
+disease_properties = analyze_network_properties(disease_graph)  # TODO: Analyze disease network
 print("\nDisease Network Properties:")
 # TODO: Add property printing code
-
+for key,value in disease_properties.items():
+    print(f"{key}: {value}" , end = " ")
 # TODO: Visualize networks
 # HINT: Use visualize_network() and plot_network_metrics() functions
 # HINT: Call visualize_network(gene_graph, title="Gene Expression Network")
@@ -413,6 +420,12 @@ print("\nDisease Network Properties:")
 print("\nVisualizing networks...")
 # TODO: Add visualization code for gene network
 # TODO: Add visualization code for disease network
+visualize_network(gene_graph, title="Gene Expression Network")
+plot_network_metrics(gene_graph, title="Gene Network Metrics")
+visualize_network(disease_graph, title="Disease Expression Network")
+plot_network_metrics(gene_graph, title="Disease Network Metrics")
+
+
 
 # ============================================================================
 # [10 pts] STEP 7: Protein Interaction Network Analysis
