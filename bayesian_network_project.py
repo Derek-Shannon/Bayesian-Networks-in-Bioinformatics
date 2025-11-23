@@ -160,37 +160,51 @@ def learn_bayesian_structure(data, threshold=0.3):
     Returns:
         list: List of tuples (node1, node2, correlation)
     """
-    # TODO: Calculate correlation matrix
+    # Calculate correlation matrix
     # HINT: Use data.corr().abs() to get absolute correlations
-    correlations = None  # TODO: Calculate correlations
+    correlations = data.corr().abs()  # Calculate correlations
     edges = []
     
-    # TODO: Find edges above threshold
-    # HINT: Use nested loops to check each pair of features
-    # HINT: Only add edges if correlation > threshold
-    # TODO: Add your loop code here
-    
+    # Find edges above threshold
+    features = data.columns
+    for i in range(len(features)):
+        for j in range(i + 1, len(features)):
+            node1 = features[i]
+            node2 = features[j]
+            corr_value = correlations.loc[node1, node2]
+            
+            # Check if correlation exceeds the threshold
+            if corr_value > threshold:
+                # Store the edge as a tuple (node1, node2, correlation)
+                edges.append((node1, node2, corr_value))
     return edges
 
 # TODO: Learn structure for gene expression network
 # HINT: Select a subset of genes for network analysis
 # HINT: Use genes from different modules: ['CDK1', 'MAPK1', 'PIK3CA', 'BCL2', 'GLUT1', 'MYC']
 selected_genes = ['CDK1', 'MAPK1', 'PIK3CA', 'BCL2', 'GLUT1', 'MYC']
-gene_subset = None  # TODO: Select gene subset
-gene_network_edges = None  # TODO: Learn gene network structure
+gene_subset = gene_features_combined[selected_genes]  # Select gene subset
+gene_network_edges = learn_bayesian_structure(gene_subset, threshold=0.3)  # Learn gene network structure
 print(f"Gene network edges found: {len(gene_network_edges) if gene_network_edges is not None else 'Not implemented'}")
 
 # TODO: Learn structure for disease markers network
 # HINT: Use first 15 columns of disease_features_combined
 # HINT: Use a lower threshold (0.1) for disease markers
-disease_network_edges = None  # TODO: Learn disease network structure
+disease_network_edges = learn_bayesian_structure(disease_features_combined.iloc[:, :15], threshold=0.1)  # TODO: Learn disease network structure
 print(f"Disease network edges found: {len(disease_network_edges) if disease_network_edges is not None else 'Not implemented'}")
 
 # TODO: Create network graphs
 # HINT: Use nx.Graph() to create NetworkX graphs
 # HINT: Add edges with weights from correlation values
-gene_graph = None  # TODO: Create gene graph
-disease_graph = None  # TODO: Create disease graph
+gene_graph = nx.Graph()  # TODO: Create gene graph
+disease_graph = nx.Graph()  # TODO: Create disease graph
+for node1, node2, weight in gene_network_edges:
+    # Add nodes and edges with the correlation as the 'weight' attribute
+    gene_graph.add_edge(node1, node2, weight=weight)
+for node1, node2, weight in disease_network_edges:
+    # Add nodes and edges with the correlation as the 'weight' attribute
+    disease_graph.add_edge(node1, node2, weight=weight)
+
 
 print(f"Gene network nodes: {gene_graph.number_of_nodes() if gene_graph is not None else 'Not created'}, edges: {gene_graph.number_of_edges() if gene_graph is not None else 'Not created'}")
 print(f"Disease network nodes: {disease_graph.number_of_nodes() if disease_graph is not None else 'Not created'}, edges: {disease_graph.number_of_edges() if disease_graph is not None else 'Not created'}")
@@ -221,7 +235,7 @@ def calculate_conditional_probabilities(data, target_col, feature_cols):
     
     # TODO: Loop through each feature
     for feature in feature_cols:
-        if data[feature].dtype in ['int64', 'bool']:
+        if data[feature].dtype in ['int64', 'bool', 'float64']:
             # TODO: Calculate conditional probabilities for each feature value and target value
             # HINT: Use len() and boolean indexing to count occurrences
             # HINT: Calculate P(target=val1|feature=val2) for all combinations
@@ -230,32 +244,44 @@ def calculate_conditional_probabilities(data, target_col, feature_cols):
                     # TODO: Calculate conditional probability
                     # HINT: Count samples where both conditions are met
                     # HINT: Divide by count of samples where feature condition is met
-                    prob = 0.0  # TODO: Calculate probability
+                    denom_count = len(data[data[feature] == feature_val])
+                    num_count = len(data[(data[feature] == feature_val) & (data[target_col] == target_val)])
+                    prob = num_count / denom_count  # Calculate probability
                     conditional_probs[f"P({target_col}={target_val}|{feature}={feature_val})"] = prob
     
     return conditional_probs
 
-# TODO: Calculate conditional probabilities for gene expression
+# Calculate conditional probabilities for gene expression
 # HINT: Use first 5 binary features
-gene_binary_features = None  # TODO: Select binary features
-gene_conditional_probs = None  # TODO: Calculate conditional probabilities
+binary_cols = [col for col in gene_features_combined.columns if col.endswith('_high')]
+gene_binary_features = gene_features_combined[binary_cols[:5]]  # Select binary features
+
+gene_df_full = pd.concat([gene_binary_features, gene_target], axis=1)
+gene_conditional_probs = calculate_conditional_probabilities(gene_df_full, 'disease_status', gene_binary_features.columns)  # Calculate conditional probabilities
 
 print("Conditional probabilities for gene expression:")
-# TODO: Add probability printing code
-
-# TODO: Calculate conditional probabilities for disease markers
+# Add probability printing code
+for k, v in list(gene_conditional_probs.items())[:4]:
+    print(f"  {k}: {v:.4f}")
+# Calculate conditional probabilities for disease markers
 # HINT: Ensure SNP columns are binary (0/1) before calculation
 # HINT: Use first 5 SNP columns from snp_columns
-disease_binary_features = None  # TODO: Select disease binary features
+disease_binary_features = disease_data[snp_columns[:5]].copy()  # Select disease binary features
 
-# TODO: Binarize SNP columns if needed
+# Binarize SNP columns if needed
 # HINT: Check if values are binary, if not convert to binary
 # HINT: Use (disease_binary_features[col] > 0).astype(int) to binarize
 print("\nStep 4c: Checking SNP columns for binary values:")
-# TODO: Add SNP checking code
+for col in disease_binary_features.columns:
+    # If values are not just 0 and 1, force binarization
+    if disease_binary_features[col].max() > 1:
+        disease_binary_features[col] = (disease_binary_features[col] > 0).astype(int)
+        print(f"  Binarized column: {col}")
+    else:
+        print(f"  Column {col} is already binary.")
 
-disease_data_combined = None  # TODO: Combine disease data
-disease_conditional_probs = None  # TODO: Calculate disease conditional probabilities
+disease_data_combined = pd.concat([disease_binary_features, disease_target], axis=1)  # Combine disease data
+disease_conditional_probs = calculate_conditional_probabilities(disease_data_combined, 'diabetes_status', disease_binary_features.columns)  # Calculate disease conditional probabilities
 # NOTE: disease_conditional_probs should be a dictionary for grading script access
 
 print(f"Disease binary features shape: {disease_binary_features.shape if disease_binary_features is not None else 'Not implemented'}")
@@ -263,7 +289,9 @@ print(f"Disease target shape: {disease_target.shape if disease_target is not Non
 print(f"SNP columns: {snp_columns[:5] if snp_columns is not None else 'Not implemented'}")
 
 print("\nConditional probabilities for disease markers:")
-# TODO: Add disease probability printing code
+
+for k, v in list(disease_conditional_probs.items())[:4]:
+    print(f"  {k}: {v:.4f}")
 
 # ============================================================================
 # [18 pts] STEP 5: Probabilistic Inference
