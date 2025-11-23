@@ -578,10 +578,10 @@ B) They provide interpretable probabilistic relationships between variables
 C) They are faster to train
 D) They require less data
 
-Your answer: [TODO: Choose A, B, C, or D]
+Your answer: B [TODO: Choose A, B, C, or D]
 """
 
-q1_answer = "TODO"  # TODO: Replace with your answer (A, B, C, or D)
+q1_answer = "B"  # TODO: Replace with your answer (A, B, C, or D)
 
 """
 Q2: In the context of gene expression analysis, what does a high correlation between 
@@ -592,10 +592,10 @@ B) The genes may be co-regulated or functionally related
 C) The genes have similar mutation rates
 D) The genes are always expressed together
 
-Your answer: [TODO: Choose A, B, C, or D]
+Your answer: B [TODO: Choose A, B, C, or D]
 """
 
-q2_answer = "TODO"  # TODO: Replace with your answer (A, B, C, or D)
+q2_answer = "B"  # TODO: Replace with your answer (A, B, C, or D)
 
 """
 Q3: When analyzing protein interaction networks, what does a high betweenness centrality 
@@ -606,10 +606,10 @@ B) The protein acts as a hub or bridge in the network
 C) The protein has many direct interactions
 D) The protein is essential for cell survival
 
-Your answer: [TODO: Choose A, B, C, or D]
+Your answer: B [TODO: Choose A, B, C, or D]
 """
 
-q3_answer = "TODO"  # TODO: Replace with your answer (A, B, C, or D)
+q3_answer = "B"  # TODO: Replace with your answer (A, B, C, or D)
 
 print("Conceptual Questions Answered:")
 print(f"Q1: {q1_answer}")
