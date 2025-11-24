@@ -429,7 +429,7 @@ def analyze_network_properties(graph):
         
         # TODO: Calculate number of connected components
         # HINT: Use nx.number_connected_components(graph)
-        properties['connected_components'] = nx.number_attracting_components(graph)  # TODO: Count components
+        properties['connected_components'] = nx.number_connected_components(graph)  # TODO: Count components
     
     return properties
 
@@ -476,8 +476,9 @@ protein_graph = nx.Graph()  # TODO: Create protein graph
 # HINT: Loop through protein_data rows
 # HINT: Add edges with protein names and interaction scores as weights
 # TODO: Add your loop code here
+#print(protein_data.columns.tolist())
 for index, row in protein_data.iterrows():
-    protein_graph.add_edge(row['protein1'],row['protein2'],weight = row['score'], interaction_type=row['interaction_type'])
+    protein_graph.add_edge(row['protein_1'],row['protein_2'],weight = row['interaction_score'], interaction_type=row['interaction_type'])
 
 
 # TODO: Analyze protein network
